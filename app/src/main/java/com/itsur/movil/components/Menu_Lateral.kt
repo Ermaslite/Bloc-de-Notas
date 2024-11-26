@@ -25,7 +25,6 @@ import com.itsur.movil.Models.items_menu_lateral.*
 import com.itsur.movil.R
 import com.itsur.movil.navigation.currentRoute
 import kotlinx.coroutines.launch
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Menu_Lateral(
     navController: NavController,
@@ -34,7 +33,8 @@ fun Menu_Lateral(
 ) {
     val scope = rememberCoroutineScope()
     val menuItems = listOf(
-        items_menu_lateral2  // Acerca de
+        items_menu_lateral2,  // Acerca de
+        items_menu_lateral1   // Nueva Tarea
     )
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -51,7 +51,8 @@ fun Menu_Lateral(
                         modifier = Modifier
                             .padding(10.dp)
                             .background(if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-                            .fillMaxWidth().clickable{navController.navigate(item.ruta)},
+                            .fillMaxWidth()
+                            .clickable { navController.navigate(item.ruta) },
                         icon = {
                             Icon(
                                 imageVector = item.icono,

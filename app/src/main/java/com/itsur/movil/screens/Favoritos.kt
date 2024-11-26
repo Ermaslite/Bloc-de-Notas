@@ -68,7 +68,7 @@ fun TaskScreen(navController: NavController) {
                             .background(Color.Black)
                             .padding(16.dp)
                             .combinedClickable(
-                                onClick = { },
+                                onClick = { navController.navigate("editTask/${task.id}") },
                                 onLongClick = { selectedTask = task }
                             )
                     ) {

@@ -4,8 +4,14 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.itsur.movil.Models.Converters
 
-@Database(entities = [Note::class], version = 1, exportSchema = false)
+import androidx.sqlite.db.SupportSQLiteDatabase
+import androidx.room.migration.Migration
+
+@Database(entities = [Note::class], version = 2, exportSchema = false)
+@TypeConverters(Converters::class)
 abstract class NoteDatabase : RoomDatabase() {
     abstract fun noteDao(): NoteDao
 
@@ -13,17 +19,26 @@ abstract class NoteDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: NoteDatabase? = null
 
+        // Define la migración de la versión 1 a la versión 2
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Añade la nueva columna 'mediaUris' a la tabla 'notes'
+                database.execSQL("ALTER TABLE notes ADD COLUMN mediaUris TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getDatabase(context: Context): NoteDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     NoteDatabase::class.java,
                     "note_database"
-                ).build()
+                )
+                    .addMigrations(MIGRATION_1_2) // Añadir la migración aquí
+                    .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
 }
-

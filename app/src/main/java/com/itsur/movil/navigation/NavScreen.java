@@ -5,5 +5,5 @@ public enum NavScreen {
     Configuracion,
     Tareas,
     Acercade,
-    Editar
+    imagesscreen
 }

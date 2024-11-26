@@ -51,6 +51,11 @@ android {
 }
 
 dependencies {
+    implementation ("com.google.android.exoplayer:exoplayer-core:2.19.0")
+    implementation ("com.google.android.exoplayer:exoplayer-ui:2.19.0")
+    implementation ("com.google.android.exoplayer:exoplayer-hls:2.19.0")
+    implementation ("androidx.compose.runtime:runtime-livedata:1.0.5")
+    implementation ("com.google.accompanist:accompanist-permissions:0.26.2-beta")
     implementation ("androidx.compose.material:material:1.7.3")
     implementation ("com.google.dagger:hilt-android:2.44")
     implementation ("androidx.hilt:hilt-navigation-compose:1.0.0")
@@ -59,6 +64,7 @@ dependencies {
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation(libs.androidx.preference.ktx)
+    implementation(libs.androidx.media3.ui)
     kapt ("com.google.dagger:hilt-compiler:2.38.1")
     implementation ("androidx.paging:paging-runtime:3.2.0") // Para Paging
     implementation ("androidx.room:room-runtime:2.6.1")
