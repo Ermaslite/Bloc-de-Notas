@@ -2,12 +2,16 @@ package com.itsur.movil.screens
 
 import android.app.Activity
 import android.app.Activity.RESULT_OK
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -66,9 +71,17 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.itsur.movil.DataBase.Note
 import com.itsur.movil.ViewModels.NoteViewModel
+import com.itsur.movil.alarm.AlarmItem
+import com.itsur.movil.alarm.AlarmSchedulerImpl
+import com.itsur.movil.alarm.AudioPlayer
 import com.itsur.movil.alarm.RecordAudioDialog
 import com.itsur.movil.imagenes.ComposeFileProvider
 import com.itsur.movil.imagenes.VideoThumbnail
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Calendar
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditNoteScreen(navController: NavController, noteId: Int?) {
@@ -77,11 +90,16 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
     var content by remember { mutableStateOf("") }
     var mediaUris by remember { mutableStateOf<List<String>>(emptyList()) }
     var mediaItems by remember { mutableStateOf(listOf<Uri>()) }
+    var reminders by remember { mutableStateOf<List<AlarmItem>>(emptyList()) }
 
     val context = LocalContext.current
+    val alarmScheduler = AlarmSchedulerImpl(context)
     var currentUri by remember { mutableStateOf<Uri?>(null) }
     var playingUri by remember { mutableStateOf<Uri?>(null) }
     var showAudioDialog by remember { mutableStateOf(false) }
+    var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+    var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -120,6 +138,7 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
             content = note?.content ?: ""
             mediaUris = note?.mediaUris ?: emptyList()
             mediaItems = mediaUris.map { Uri.parse(it) }
+            reminders = note?.reminders ?: emptyList()
         }
     }
 
@@ -134,6 +153,38 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
                 }
             }
         )
+    }
+
+    if (showDatePickerDialog) {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                selectedDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, selectedDateTime.hour, selectedDateTime.minute)
+                showTimePickerDialog = true
+                showDatePickerDialog = false
+            },
+            selectedDateTime.year,
+            selectedDateTime.monthValue - 1,
+            selectedDateTime.dayOfMonth
+        ).show()
+    }
+
+    if (showTimePickerDialog) {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                selectedDateTime = selectedDateTime.withHour(hourOfDay).withMinute(minute)
+                val alarmMessage = "Recordatorio: $title"
+                val alarmItem = AlarmItem(selectedDateTime, alarmMessage)
+                reminders = reminders + alarmItem
+                // Programar la alarma
+                alarmScheduler.schedule(alarmItem)
+                showTimePickerDialog = false
+            },
+            selectedDateTime.hour,
+            selectedDateTime.minute,
+            true
+        ).show()
     }
 
     Scaffold(
@@ -151,7 +202,8 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
                             id = noteId ?: 0,
                             title = title,
                             content = content,
-                            mediaUris = mediaUris
+                            mediaUris = mediaUris,
+                            reminders = reminders
                         ))
                         navController.popBackStack()
                     }) {
@@ -196,6 +248,11 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
                             showAudioDialog = true
                         }) {
                             Icon(Icons.Default.Mic, contentDescription = "Grabar Audio")
+                        }
+                        FloatingActionButton(onClick = {
+                            showDatePickerDialog = true
+                        }) {
+                            Icon(Icons.Default.Alarm, contentDescription = "Programar Alarma")
                         }
                     }
                 }
@@ -254,45 +311,3 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
         }
     )
 }
-
-@Composable
-fun AudioPlayer(audioUri: Uri, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    var isPlaying by remember { mutableStateOf(false) }
-    val mediaPlayer = remember {
-        MediaPlayer().apply {
-            setDataSource(context, audioUri)
-            prepare()
-        }
-    }
-
-    DisposableEffect(mediaPlayer) {
-        onDispose {
-            mediaPlayer.release()
-        }
-    }
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp)
-    ) {
-        IconButton(onClick = {
-            if (isPlaying) {
-                mediaPlayer.pause()
-            } else {
-                mediaPlayer.start()
-            }
-            isPlaying = !isPlaying
-        }) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir"
-            )
-        }
-        Text(text = if (isPlaying) "Reproduciendo" else "Pausado")
-    }
-}
-

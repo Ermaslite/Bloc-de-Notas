@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -67,9 +68,7 @@ fun NotesScreen(navController: NavController) {
                         contentPadding = PaddingValues(16.dp)
                     ) {
                         items(notes) { note ->
-                            NoteItem(note = note, onClick = {
-                                navController.navigate("edit_note/${note.id}")
-                            }, onLongClick = {
+                            NoteItem(note = note, navController = navController, onLongClick = {
                                 selectedNoteId = note.id
                                 showDeleteIcon = true
                             })
@@ -95,9 +94,11 @@ fun NotesScreen(navController: NavController) {
             }
         }
     )
-}@OptIn(ExperimentalFoundationApi::class)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NoteItem(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun NoteItem(note: Note, navController: NavController, onLongClick: () -> Unit) {
     var playingUri by remember { mutableStateOf<Uri?>(null) }
 
     Card(
@@ -105,7 +106,7 @@ fun NoteItem(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
             .combinedClickable(
-                onClick = onClick,
+                onClick = { navController.navigate("edit_note/${note.id}") },
                 onLongClick = onLongClick
             )
     ) {
@@ -117,27 +118,35 @@ fun NoteItem(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
                 ) {
                     items(note.mediaUris) { uri ->
                         val parsedUri = Uri.parse(uri)
-                        if (uri.endsWith(".mp4")) {
-                            if (playingUri == parsedUri) {
-                                VideoPlayer(videoUri = parsedUri, modifier = Modifier.height(200.dp))
-                            } else {
+                        val mediaType = when {
+                            uri.endsWith(".mp4") -> "video"
+                            uri.endsWith(".mp3") -> "audio"
+                            else -> "image"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clickable {
+                                    navController.navigate("full_screen_media/${Uri.encode(parsedUri.toString())}/${mediaType}")
+                                }
+                        ) {
+                            if (uri.endsWith(".mp4")) {
                                 VideoThumbnail(
                                     videoUri = parsedUri,
                                     modifier = Modifier.height(200.dp),
                                     onPlayClick = { playingUri = parsedUri }
                                 )
+                            } else if (uri.endsWith(".mp3")) {
+                                Icon(Icons.Default.Audiotrack, contentDescription = "Reproducir audio")
+                            } else {
+                                AsyncImage(
+                                    model = parsedUri,
+                                    contentDescription = "Imagen multimedia",
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                )
                             }
-                        } else if (uri.endsWith(".mp3")) {
-                            AudioPlayer(audioUri = parsedUri, modifier = Modifier.height(56.dp))
-                        } else {
-                            AsyncImage(
-                                model = parsedUri,
-                                contentDescription = "Multimedia",
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                            )
                         }
                     }
                 }
