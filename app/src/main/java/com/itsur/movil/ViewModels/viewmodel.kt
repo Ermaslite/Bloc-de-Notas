@@ -10,6 +10,7 @@ import com.itsur.movil.DataBase.Note
 import com.itsur.movil.DataBase.NoteDatabase
 import com.itsur.movil.DataBase.NoteRepository
 import kotlinx.coroutines.launch
+import androidx.lifecycle.*
 
 class NoteViewModel(application: Application) : AndroidViewModel(application) {
         private val repository: NoteRepository
@@ -21,14 +22,19 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
 
         val notes: LiveData<List<Note>> = repository.getAllNotes().asLiveData()
 
+        private val _note = MutableLiveData<Note?>()
+        val note: LiveData<Note?> get() = _note
+
+        fun getNoteById(id: Int) {
+                viewModelScope.launch {
+                        _note.value = repository.getNoteById(id)
+                }
+        }
+
         fun addOrUpdate(note: Note) {
                 viewModelScope.launch {
                         repository.addOrUpdate(note)
                 }
-        }
-
-        suspend fun getNoteById(id: Int): Note? {
-                return repository.getNoteById(id)
         }
 
         fun delete(noteId: Int) {
@@ -37,3 +43,4 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
                 }
         }
 }
+

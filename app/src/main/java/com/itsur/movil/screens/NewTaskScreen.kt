@@ -46,7 +46,6 @@ import java.util.Calendar
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.input.TextFieldValue
-
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -57,6 +56,7 @@ fun NewTaskScreen(navController: NavController, taskId: Int?) {
     var date by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
+    var reminderCount by remember { mutableStateOf(1) }  // Añadimos reminderCount
 
     val context = LocalContext.current
     val alarmScheduler = AlarmSchedulerImpl(context)
@@ -104,8 +104,9 @@ fun NewTaskScreen(navController: NavController, taskId: Int?) {
                         )
                         val task = Task(description = description.text, date = date, time = time)
                         viewModel.addTask(task)
-                        val alarmItem = AlarmItem(alarmTime, description.text)
+                        val alarmItem = AlarmItem(reminderCount, alarmTime, description.text)  // Usamos reminderCount como alarmId
                         alarmScheduler.schedule(alarmItem)
+                        reminderCount++  // Incrementar reminderCount después de cada uso
                         navController.popBackStack()
                     }
                 }

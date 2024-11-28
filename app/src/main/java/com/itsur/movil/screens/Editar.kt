@@ -21,12 +21,13 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.*
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
@@ -80,17 +81,19 @@ import com.itsur.movil.imagenes.VideoThumbnail
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditNoteScreen(navController: NavController, noteId: Int?) {
     val viewModel: NoteViewModel = viewModel()
+    val note by viewModel.note.observeAsState()
+
     var title by remember { mutableStateOf("") }
     var content by remember { mutableStateOf("") }
     var mediaUris by remember { mutableStateOf<List<String>>(emptyList()) }
     var mediaItems by remember { mutableStateOf(listOf<Uri>()) }
     var reminders by remember { mutableStateOf<List<AlarmItem>>(emptyList()) }
+    var reminderCount by remember { mutableStateOf(1) }
 
     val context = LocalContext.current
     val alarmScheduler = AlarmSchedulerImpl(context)
@@ -133,12 +136,20 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
 
     LaunchedEffect(noteId) {
         noteId?.let {
-            val note = viewModel.getNoteById(it)
-            title = note?.title ?: ""
-            content = note?.content ?: ""
-            mediaUris = note?.mediaUris ?: emptyList()
-            mediaItems = mediaUris.map { Uri.parse(it) }
-            reminders = note?.reminders ?: emptyList()
+            viewModel.getNoteById(it)
+        }
+    }
+
+    LaunchedEffect(note) {
+        note?.let {
+            title = it.title
+            content = it.content
+            mediaUris = it.mediaUris
+            mediaItems = mediaUris.map { uri -> Uri.parse(uri) }
+            reminders = it.reminders.map { alarmItem ->
+                AlarmItem(alarmItem.alarmId, alarmItem.alarmTime ?: LocalDateTime.now(), alarmItem.message)
+            }
+            reminderCount = reminders.size + 1
         }
     }
 
@@ -174,11 +185,11 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
             context,
             { _, hourOfDay, minute ->
                 selectedDateTime = selectedDateTime.withHour(hourOfDay).withMinute(minute)
-                val alarmMessage = "Recordatorio: $title"
-                val alarmItem = AlarmItem(selectedDateTime, alarmMessage)
+                val alarmMessage = "Recordatorio $reminderCount: $title"
+                val alarmItem = AlarmItem(reminderCount, selectedDateTime, alarmMessage)
                 reminders = reminders + alarmItem
-                // Programar la alarma
                 alarmScheduler.schedule(alarmItem)
+                reminderCount++
                 showTimePickerDialog = false
             },
             selectedDateTime.hour,
@@ -259,53 +270,58 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
             }
         },
         content = { paddingValues ->
-            Column(
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState())
             ) {
-                TextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título") },
-                    textStyle = TextStyle(fontSize = 14.sp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                TextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("Descripción") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f, fill = false)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                // Mostrar multimedia actual
-                mediaItems.forEach { uri ->
-                    if (uri.toString().endsWith(".mp4")) {
-                        VideoThumbnail(
-                            videoUri = uri,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(200.dp),
-                            onPlayClick = { playingUri = uri }
-                        )
-                    } else if (uri.toString().endsWith(".mp3")) {
-                        AudioPlayer(audioUri = uri, modifier = Modifier.height(56.dp))
-                    } else {
-                        AsyncImage(
-                            model = uri,
-                            contentDescription = "Multimedia",
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .fillMaxWidth()
-                                .height(200.dp)
-                        )
-                    }
+                item {
+                    TextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Título") },
+                        textStyle = TextStyle(fontSize = 14.sp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
+                    TextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("Descripción") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 56.dp,)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    // Mostrar multimedia actual
+                    mediaItems.forEach { uri ->
+                        if (uri.toString().endsWith(".mp4")) {
+                            VideoThumbnail(
+                                videoUri = uri,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp),
+                                onPlayClick = { playingUri = uri }
+                            )
+                        } else if (uri.toString().endsWith(".mp3")) {
+                            AudioPlayer(audioUri = uri, modifier = Modifier.height(56.dp))
+                        } else {
+                            AsyncImage(
+                                model = uri,
+                                contentDescription = "Multimedia",
+                                modifier = Modifier
+                                    .padding(4.dp)
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    // Mostrar los recordatorios
+                    reminders.forEach { reminder ->
+                        Text(text = "Recordatorio: ${reminder.message} a las ${reminder.getFormattedTime()}")
+                    }
                 }
             }
         }

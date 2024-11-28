@@ -9,49 +9,64 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 
 
 data class AlarmItem(
+    val alarmId: Int,
     val alarmTime: LocalDateTime,
     val message: String
-)
+) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun getFormattedTime(): String {
+        return try {
+            alarmTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+        } catch (e: Exception) {
+            "Hora no disponible"
+        }
+    }
+}
+
+
+
+
 
 interface AlarmScheduler {
     fun schedule(alarmItem: AlarmItem)
     fun cancel(alarmItem: AlarmItem)
 }
-
 class AlarmSchedulerImpl(private val context: Context) : AlarmScheduler {
 
-    private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
-    @SuppressLint("ScheduleExactAlarm")
     @RequiresApi(Build.VERSION_CODES.O)
+    @SuppressLint("ScheduleExactAlarm")
     override fun schedule(alarmItem: AlarmItem) {
+        val triggerTime = alarmItem.alarmTime?.let {
+            it.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
+        } ?: throw IllegalStateException("Alarm time cannot be null")
+
         val intent = Intent(context, AlarmReceiver::class.java).apply {
-            putExtra("EXTRA_MESSAGE", alarmItem.message)
+            putExtra("message", alarmItem.message)
         }
-
-        val triggerTime = alarmItem.alarmTime.atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
-
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            alarmItem.hashCode(),
+            alarmItem.alarmId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
-
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
     }
 
     override fun cancel(alarmItem: AlarmItem) {
         val intent = Intent(context, AlarmReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            alarmItem.hashCode(),
+            alarmItem.alarmId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT
         )
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         alarmManager.cancel(pendingIntent)
     }
 }
