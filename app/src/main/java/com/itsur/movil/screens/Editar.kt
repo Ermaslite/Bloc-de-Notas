@@ -78,9 +78,14 @@ import com.itsur.movil.alarm.AudioPlayer
 import com.itsur.movil.alarm.RecordAudioDialog
 import com.itsur.movil.imagenes.ComposeFileProvider
 import com.itsur.movil.imagenes.VideoThumbnail
+import java.text.DateFormat
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Date
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +100,9 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
     var reminders by remember { mutableStateOf<List<AlarmItem>>(emptyList()) }
     var reminderCount by remember { mutableStateOf(1) }
 
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
+
     val context = LocalContext.current
     val alarmScheduler = AlarmSchedulerImpl(context)
     var currentUri by remember { mutableStateOf<Uri?>(null) }
@@ -102,7 +110,6 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
     var showAudioDialog by remember { mutableStateOf(false) }
     var showDatePickerDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
-    var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -146,9 +153,7 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
             content = it.content
             mediaUris = it.mediaUris
             mediaItems = mediaUris.map { uri -> Uri.parse(uri) }
-            reminders = it.reminders.map { alarmItem ->
-                AlarmItem(alarmItem.alarmId, alarmItem.alarmTime ?: LocalDateTime.now(), alarmItem.message)
-            }
+            reminders = it.reminders
             reminderCount = reminders.size + 1
         }
     }
@@ -170,13 +175,13 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
         DatePickerDialog(
             context,
             { _, year, month, dayOfMonth ->
-                selectedDateTime = LocalDateTime.of(year, month + 1, dayOfMonth, selectedDateTime.hour, selectedDateTime.minute)
+                selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
                 showTimePickerDialog = true
                 showDatePickerDialog = false
             },
-            selectedDateTime.year,
-            selectedDateTime.monthValue - 1,
-            selectedDateTime.dayOfMonth
+            selectedDate.year,
+            selectedDate.monthValue - 1,
+            selectedDate.dayOfMonth
         ).show()
     }
 
@@ -184,16 +189,17 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
         TimePickerDialog(
             context,
             { _, hourOfDay, minute ->
-                selectedDateTime = selectedDateTime.withHour(hourOfDay).withMinute(minute)
+                selectedTime = LocalTime.of(hourOfDay, minute)
                 val alarmMessage = "Recordatorio $reminderCount: $title"
-                val alarmItem = AlarmItem(reminderCount, selectedDateTime, alarmMessage)
+                val alarmDateTime = LocalDateTime.of(selectedDate, selectedTime).atZone(ZoneId.systemDefault()).toEpochSecond() * 1000
+                val alarmItem = AlarmItem(reminderCount, alarmDateTime, alarmMessage)
                 reminders = reminders + alarmItem
                 alarmScheduler.schedule(alarmItem)
                 reminderCount++
                 showTimePickerDialog = false
             },
-            selectedDateTime.hour,
-            selectedDateTime.minute,
+            selectedTime.hour,
+            selectedTime.minute,
             true
         ).show()
     }
@@ -291,7 +297,7 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
                         label = { Text("Descripción") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 56.dp,)
+                            .heightIn(min = 56.dp, max = 200.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     // Mostrar multimedia actual
@@ -320,7 +326,9 @@ fun EditNoteScreen(navController: NavController, noteId: Int?) {
                     }
                     // Mostrar los recordatorios
                     reminders.forEach { reminder ->
-                        Text(text = "Recordatorio: ${reminder.message} a las ${reminder.getFormattedTime()}")
+                        Text(text = "Recordatorio: ${reminder.message} el ${DateFormat.getDateTimeInstance().format(
+                            Date(reminder.alarmTimestamp)
+                        )}")
                     }
                 }
             }

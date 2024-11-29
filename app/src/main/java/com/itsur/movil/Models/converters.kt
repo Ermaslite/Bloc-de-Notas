@@ -6,8 +6,6 @@ import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.itsur.movil.alarm.AlarmItem
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 
 class Converters {
@@ -34,16 +32,13 @@ class Converters {
         return Gson().fromJson(value, listType)
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @TypeConverter
-    fun fromLocalDateTime(date: LocalDateTime): String {
-        return date.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    fun fromLong(value: Long): String {
+        return value.toString()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
     @TypeConverter
-    fun toLocalDateTime(dateString: String): LocalDateTime {
-        return LocalDateTime.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    fun toLong(value: String): Long {
+        return value.toLong()
     }
 }
-
