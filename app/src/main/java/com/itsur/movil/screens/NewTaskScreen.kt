@@ -46,152 +46,151 @@ import java.util.Calendar
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.text.input.TextFieldValue
+import java.time.ZoneId
+
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NewTaskScreen(navController: NavController, taskId: Int?) {
-//
-//    val viewModel: TaskViewModel = viewModel()
-//    var title by remember { mutableStateOf(TextFieldValue("")) }
-//    var description by remember { mutableStateOf(TextFieldValue("")) }
-//    var date by remember { mutableStateOf("") }
-//    var time by remember { mutableStateOf("") }
-//    var showError by remember { mutableStateOf(false) }
-//    var reminderCount by remember { mutableStateOf(1) }  // Añadimos reminderCount
-//
-//    val context = LocalContext.current
-//    val alarmScheduler = AlarmSchedulerImpl(context)
-//    val calendar = Calendar.getInstance()
-//
-//    // Crear el canal de notificación
-//    createNotificationChannel(context)
-//
-//    // Calendar Date Picker
-//    val datePickerDialog = DatePickerDialog(
-//        context,
-//        { _, year, month, dayOfMonth ->
-//            date = "$year-${month + 1}-$dayOfMonth"
-//        },
-//        calendar.get(Calendar.YEAR),
-//        calendar.get(Calendar.MONTH),
-//        calendar.get(Calendar.DAY_OF_MONTH)
-//    )
-//
-//    // Time Picker
-//    val timePickerDialog = TimePickerDialog(
-//        context,
-//        { _, hourOfDay, minute ->
-//            time = "$hourOfDay:$minute"
-//        },
-//        calendar.get(Calendar.HOUR_OF_DAY),
-//        calendar.get(Calendar.MINUTE),
-//        true
-//    )
-//
-//    Scaffold(
-//        floatingActionButton = {
-//            FloatingActionButton(
-//                onClick = {
-//                    if (title.text.isEmpty() || description.text.isEmpty() || date.isEmpty() || time.isEmpty()) {
-//                        showError = true
-//                    } else {
-//                        showError = false
-//                        val alarmTime = LocalDateTime.of(
-//                            date.split("-")[0].toInt(),
-//                            date.split("-")[1].toInt(),
-//                            date.split("-")[2].toInt(),
-//                            time.split(":")[0].toInt(),
-//                            time.split(":")[1].toInt()
-//                        )
-//                        val task = Task(description = description.text, date = date, time = time)
-//                        viewModel.addTask(task)
-//                        val alarmItem = AlarmItem(reminderCount, alarmTime, description.text)  // Usamos reminderCount como alarmId
-//                        alarmScheduler.schedule(alarmItem)
-//                        reminderCount++  // Incrementar reminderCount después de cada uso
-//                        navController.popBackStack()
-//                    }
-//                }
-//            ) {
-//                Icon(Icons.Default.Save, contentDescription = "Guardar")
-//            }
-//        }
-//    ) { padding ->
-//        val scrollState = rememberScrollState()
-//
-//        Column(
-//            modifier = Modifier
-//                .padding(padding)
-//                .padding(16.dp)
-//                .fillMaxSize()
-//                .verticalScroll(scrollState),
-//            horizontalAlignment = Alignment.CenterHorizontally,
-//            verticalArrangement = Arrangement.Center
-//        ) {
-//            if (showError) {
-//                Text(
-//                    text = "Por favor, completa todos los campos",
-//                    color = MaterialTheme.colorScheme.error,
-//                    style = MaterialTheme.typography.bodyMedium,
-//                    modifier = Modifier.padding(bottom = 8.dp)
-//                )
-//            }
-//            TextField(
-//                value = title,
-//                onValueChange = { title = it },
-//                label = { Text("Título") },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(8.dp)
-//                    .background(
-//                        color = MaterialTheme.colorScheme.surface,
-//                        shape = MaterialTheme.shapes.medium
-//                    )
-//                    .shadow(2.dp),
-//                colors = TextFieldDefaults.textFieldColors(
-//                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-//                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground
-//                )
-//            )
-//            Spacer(modifier = Modifier.height(8.dp))
-//            TextField(
-//                value = description,
-//                onValueChange = { description = it },
-//                label = { Text("Descripción") },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .height(150.dp)
-//                    .padding(8.dp)
-//                    .background(
-//                        color = MaterialTheme.colorScheme.surface,
-//                        shape = MaterialTheme.shapes.medium
-//                    )
-//                    .shadow(2.dp),
-//                maxLines = 5,
-//                colors = TextFieldDefaults.textFieldColors(
-//                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-//                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground
-//                )
-//            )
-//            Spacer(modifier = Modifier.height(8.dp))
-//            Button(
-//                onClick = { datePickerDialog.show() },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(8.dp)
-//                    .shadow(2.dp, shape = MaterialTheme.shapes.medium),
-//            ) {
-//                Text(text = if (date.isEmpty()) "Seleccionar Fecha" else date)
-//            }
-//            Spacer(modifier = Modifier.height(8.dp))
-//            Button(
-//                onClick = { timePickerDialog.show() },
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(8.dp)
-//                    .shadow(2.dp, shape = MaterialTheme.shapes.medium),
-//            ) {
-//                Text(text = if (time.isEmpty()) "Seleccionar Hora" else time)
-//            }
-//        }
-//    }
+    val viewModel: TaskViewModel = viewModel()
+    var title by remember { mutableStateOf(TextFieldValue("")) }
+    var description by remember { mutableStateOf(TextFieldValue("")) }
+    var date by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
+    var reminderCount by remember { mutableStateOf(1) }
+
+    val context = LocalContext.current
+    val alarmScheduler = AlarmSchedulerImpl(context)
+    val calendar = Calendar.getInstance()
+
+    createNotificationChannel(context)
+
+    val datePickerDialog = DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            date = "$year-${month + 1}-$dayOfMonth"
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    val timePickerDialog = TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            time = "$hourOfDay:$minute"
+        },
+        calendar.get(Calendar.HOUR_OF_DAY),
+        calendar.get(Calendar.MINUTE),
+        true
+    )
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    if (title.text.isEmpty() || description.text.isEmpty() || date.isEmpty() || time.isEmpty()) {
+                        showError = true
+                    } else {
+                        showError = false
+                        val alarmTime = LocalDateTime.of(
+                            date.split("-")[0].toInt(),
+                            date.split("-")[1].toInt(),
+                            date.split("-")[2].toInt(),
+                            time.split(":")[0].toInt(),
+                            time.split(":")[1].toInt()
+                        )
+                        val alarmMillis = alarmTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                        val task = Task(description = description.text, date = date, time = time)
+                        viewModel.addTask(task)
+                        val alarmItem = AlarmItem(reminderCount, alarmMillis, description.text)
+                        alarmScheduler.schedule(alarmItem)
+                        reminderCount++
+                        navController.popBackStack()
+                    }
+                }
+            ) {
+                Icon(Icons.Default.Save, contentDescription = "Guardar")
+            }
+        }
+    ) { padding ->
+        val scrollState = rememberScrollState()
+
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize()
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (showError) {
+                Text(
+                    text = "Por favor, completa todos los campos",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            TextField(
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Título") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    .shadow(2.dp),
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            TextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Descripción") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .padding(8.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    .shadow(2.dp),
+                maxLines = 5,
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                    unfocusedIndicatorColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { datePickerDialog.show() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .shadow(2.dp, shape = MaterialTheme.shapes.medium),
+            ) {
+                Text(text = if (date.isEmpty()) "Seleccionar Fecha" else date)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Button(
+                onClick = { timePickerDialog.show() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .shadow(2.dp, shape = MaterialTheme.shapes.medium),
+            ) {
+                Text(text = if (time.isEmpty()) "Seleccionar Hora" else time)
+            }
+        }
+    }
 }

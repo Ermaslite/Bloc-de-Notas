@@ -42,16 +42,17 @@ fun BancNavigation(navController: NavHostController) {
         composable("edit_note") {
             EditNoteScreen(navController, null)
         }
-        composable("tareas") {
-            TaskScreen(navController)
-        }
-        composable("newTask/{taskId}", arguments = listOf(navArgument("taskId") { defaultValue = -1 })) { backStackEntry ->
-            val taskId = backStackEntry.arguments?.getInt("taskId") ?: -1
-            NewTaskScreen(navController, taskId)
-        }
-        composable("newTask") {
-            NewTaskScreen(navController, null)
-        }
+                composable("tareas") {
+                    TaskScreen(navController)
+                }
+                composable("newTask/{taskId}", arguments = listOf(navArgument("taskId") { defaultValue = -1 })) { backStackEntry ->
+                    val taskId = backStackEntry.arguments?.getInt("taskId") ?: -1
+                    NewTaskScreen(navController, taskId)
+                }
+                composable("newTask") {
+                    NewTaskScreen(navController, null)
+                }
+
         composable(NavScreen.Configuracion.name) {
             SettingsScreen()
         }
